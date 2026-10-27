@@ -1,4 +1,324 @@
 [
-  { "name": "Yellow + Emerald", "chain": ["Y", "E"] },
-  { "name": "Yellow + Emerald, TMs on", "chain": ["Y", "E"], "rules": { "tms": true } }
+ {
+  "name": "Solo Red/Blue",
+  "chain": [
+   "RB"
+  ]
+ },
+ {
+  "name": "Solo Yellow",
+  "chain": [
+   "Y"
+  ]
+ },
+ {
+  "name": "Solo Gold/Silver",
+  "chain": [
+   "GS"
+  ]
+ },
+ {
+  "name": "Solo Crystal",
+  "chain": [
+   "C"
+  ]
+ },
+ {
+  "name": "Solo Ruby/Sapphire",
+  "chain": [
+   "RS"
+  ]
+ },
+ {
+  "name": "Solo Emerald",
+  "chain": [
+   "E"
+  ]
+ },
+ {
+  "name": "Solo FireRed/LeafGreen",
+  "chain": [
+   "FRLG"
+  ]
+ },
+ {
+  "name": "Solo Diamond/Pearl",
+  "chain": [
+   "DP"
+  ]
+ },
+ {
+  "name": "Solo Platinum",
+  "chain": [
+   "PT"
+  ]
+ },
+ {
+  "name": "Solo HG/SS",
+  "chain": [
+   "HGSS"
+  ]
+ },
+ {
+  "name": "Solo Black/White",
+  "chain": [
+   "BW"
+  ]
+ },
+ {
+  "name": "Solo Black 2/White 2",
+  "chain": [
+   "B2W2"
+  ]
+ },
+ {
+  "name": "Solo X/Y",
+  "chain": [
+   "XY"
+  ]
+ },
+ {
+  "name": "Solo OR/AS",
+  "chain": [
+   "ORAS"
+  ]
+ },
+ {
+  "name": "Solo Sun/Moon",
+  "chain": [
+   "SM"
+  ]
+ },
+ {
+  "name": "Solo US/UM",
+  "chain": [
+   "USUM"
+  ]
+ },
+ {
+  "name": "Solo Let's Go",
+  "chain": [
+   "LGPE"
+  ]
+ },
+ {
+  "name": "Solo Sword/Shield",
+  "chain": [
+   "SWSH"
+  ]
+ },
+ {
+  "name": "Solo BD/SP",
+  "chain": [
+   "BDSP"
+  ]
+ },
+ {
+  "name": "Solo Legends: Arceus",
+  "chain": [
+   "PLA"
+  ]
+ },
+ {
+  "name": "Solo Scarlet/Violet",
+  "chain": [
+   "SV"
+  ]
+ },
+ {
+  "name": "Solo Legends: Z-A",
+  "chain": [
+   "LZA"
+  ]
+ },
+ {
+  "name": "Preset Latest of each gen",
+  "chain": [
+   "Y",
+   "C",
+   "E",
+   "PT",
+   "B2W2",
+   "ORAS",
+   "USUM",
+   "SWSH",
+   "LZA"
+  ]
+ },
+ {
+  "name": "Preset Latest of each gen, obedience off",
+  "chain": [
+   "Y",
+   "C",
+   "E",
+   "PT",
+   "B2W2",
+   "ORAS",
+   "USUM",
+   "SWSH",
+   "LZA"
+  ],
+  "rules": {
+   "obey": false
+  }
+ },
+ {
+  "name": "Preset Gens 1-4",
+  "chain": [
+   "RB",
+   "GS",
+   "RS",
+   "DP"
+  ]
+ },
+ {
+  "name": "Preset Gens 1-4, obedience off",
+  "chain": [
+   "RB",
+   "GS",
+   "RS",
+   "DP"
+  ],
+  "rules": {
+   "obey": false
+  }
+ },
+ {
+  "name": "Preset Gens 3-9",
+  "chain": [
+   "RS",
+   "DP",
+   "BW",
+   "XY",
+   "SM",
+   "SWSH",
+   "SV"
+  ]
+ },
+ {
+  "name": "Preset Gens 3-9, obedience off",
+  "chain": [
+   "RS",
+   "DP",
+   "BW",
+   "XY",
+   "SM",
+   "SWSH",
+   "SV"
+  ],
+  "rules": {
+   "obey": false
+  }
+ },
+ {
+  "name": "Preset Gens 5-9",
+  "chain": [
+   "BW",
+   "XY",
+   "SM",
+   "SWSH",
+   "SV"
+  ]
+ },
+ {
+  "name": "Preset Gens 5-9, obedience off",
+  "chain": [
+   "BW",
+   "XY",
+   "SM",
+   "SWSH",
+   "SV"
+  ],
+  "rules": {
+   "obey": false
+  }
+ },
+ {
+  "name": "Preset Gens 6-9",
+  "chain": [
+   "XY",
+   "SM",
+   "SWSH",
+   "SV"
+  ]
+ },
+ {
+  "name": "Preset Gens 6-9, obedience off",
+  "chain": [
+   "XY",
+   "SM",
+   "SWSH",
+   "SV"
+  ],
+  "rules": {
+   "obey": false
+  }
+ },
+ {
+  "name": "Preset Gens 7-9",
+  "chain": [
+   "SM",
+   "SWSH",
+   "SV"
+  ]
+ },
+ {
+  "name": "Preset Gens 7-9, obedience off",
+  "chain": [
+   "SM",
+   "SWSH",
+   "SV"
+  ],
+  "rules": {
+   "obey": false
+  }
+ },
+ {
+  "name": "Preset Gens 1-2 + 7-9",
+  "chain": [
+   "RB",
+   "GS",
+   "SM",
+   "SWSH",
+   "SV"
+  ]
+ },
+ {
+  "name": "Preset Gens 1-2 + 7-9, obedience off",
+  "chain": [
+   "RB",
+   "GS",
+   "SM",
+   "SWSH",
+   "SV"
+  ],
+  "rules": {
+   "obey": false
+  }
+ },
+ {
+  "name": "Preset Remakes and Legends",
+  "chain": [
+   "FRLG",
+   "HGSS",
+   "ORAS",
+   "BDSP",
+   "PLA",
+   "LZA"
+  ]
+ },
+ {
+  "name": "Preset Remakes and Legends, obedience off",
+  "chain": [
+   "FRLG",
+   "HGSS",
+   "ORAS",
+   "BDSP",
+   "PLA",
+   "LZA"
+  ],
+  "rules": {
+   "obey": false
+  }
+ }
 ]

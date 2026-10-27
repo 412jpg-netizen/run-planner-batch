@@ -39,7 +39,9 @@ jobs:
           - 'best\|TMs on'
           - 'best\|\+0'
           - 'best\|\+5'
-          - 'chain'
+          - '^chain\|(default|obey off|VC off|FRLG on Switch|gifts off|TMs on|\+0|\+5)$'
+          - '^chain\|Solo'
+          - '^chain\|Preset'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
