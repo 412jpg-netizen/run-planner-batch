@@ -1,17 +1,2 @@
-2026-10-27T15:35:50.859Z  start: 1 jobs, 4 workers, out /home/runner/work/run-planner-batch/run-planner-batch/out
-2026-10-27T15:35:50.862Z  begin 1/1 best [FRLG on Switch] best|d211110
-2026-10-27T15:39:12.703Z  done  best|d211110: 30 Pokémon, chain RB-GS-FRLG-PT-B2W2-XY-SM-PLA-LZA, 202 s
-2026-10-27T15:39:12.704Z  all jobs finished
-2026-10-27T15:34:03.634Z  begin 2/7 chain [gifts off] RB-GS-RS-DP-BW-XY-SM-SWSH-SV|d211000
-2026-10-27T15:35:05.150Z  done  RB-GS-RS-DP-BW-XY-SM-SWSH-SV|d211000: 35 Pokémon, chain RB-GS-RS-DP-BW-XY-SM-SWSH-SV, 62 s
-2026-10-27T15:35:05.151Z  begin 3/7 chain [TMs on] RB-GS-RS-DP-BW-XY-SM-SWSH-SV|d211011
-2026-10-27T15:35:32.157Z  done  RB-GS-RS-DP-BW-XY-SM-SWSH-SV|d211011: 32 Pokémon, chain RB-GS-RS-DP-BW-XY-SM-SWSH-SV, 27 s
-2026-10-27T15:35:32.158Z  begin 4/7 chain [+0] RB-GS-RS-DP-BW-XY-SM-SWSH-SV|d011010
-2026-10-27T15:37:12.651Z  done  RB-GS-RS-DP-BW-XY-SM-SWSH-SV|d011010: 38 Pokémon, chain RB-GS-RS-DP-BW-XY-SM-SWSH-SV, 100 s
-2026-10-27T15:37:12.654Z  begin 5/7 chain [+5] RB-GS-RS-DP-BW-XY-SM-SWSH-SV|d511010
-2026-10-27T15:37:26.437Z  done  RB-GS-RS-DP-BW-XY-SM-SWSH-SV|d511010: 26 Pokémon, chain RB-GS-RS-DP-BW-XY-SM-SWSH-SV, 14 s
-2026-10-27T15:37:26.437Z  begin 6/7 chain [Yellow + Emerald] Y-E|d211010
-2026-10-27T15:38:48.615Z  done  Y-E|d211010: 12 Pokémon, chain Y-E, 82 s
-2026-10-27T15:38:48.615Z  begin 7/7 chain [Yellow + Emerald, TMs on] Y-E|d211011
-2026-10-27T15:38:54.657Z  done  Y-E|d211011: 9 Pokémon, chain Y-E, 6 s
-2026-10-27T15:38:54.657Z  all jobs finished
+2026-10-27T15:47:42.632Z  start: 0 jobs, 4 workers, out /home/runner/work/run-planner-batch/run-planner-batch/out
+2026-10-27T15:47:42.633Z  all jobs finished
