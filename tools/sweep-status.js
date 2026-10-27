@@ -1,12 +1,14 @@
-/* One line about the sweep: shards finished, chains planned, best chain so far.  node tools/sweep-status.js [dir=sweep] */
+/* Sweep progress, one line per rule set: shards finished, chains planned, best chain so far.  node tools/sweep-status.js [dir=sweep] */
 'use strict';
 const fs = require('fs'), path = require('path');
 const dir = path.resolve(process.argv[2] || path.join(__dirname, '..', 'sweep'));
 const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => f.endsWith('.json')) : [];
-let planned = 0, total = 0, shards = 0, errors = 0, best = null, minutes = 0;
+const sets = {};   // "flags-dDELTA" -> { shards, planned, errors, best, minutes }
 for (const f of files) {
   let d; try { d = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); } catch { continue; }
-  shards++; total += d.total || 0; minutes = Math.max(minutes, d.minutes || 0);
-  for (const r of d.rows) { planned++; if (r[1] == null) errors++; else if (r[4] === r[0].length && (!best || r[1] < best[1] || (r[1] === best[1] && r[2] < best[2]))) best = r; }
+  const k = f.replace(/-\d+of\d+\.json$/, ''), s = sets[k] ||= { shards: 0, planned: 0, errors: 0, best: null, minutes: 0, rules: d.rules };
+  s.shards++; s.minutes = Math.max(s.minutes, d.minutes || 0);
+  for (const r of d.rows) { s.planned++; if (r[1] == null) s.errors++; else if (r[4] === r[0].length && (!s.best || r[1] < s.best[1] || (r[1] === s.best[1] && r[2] < s.best[2]))) s.best = r; }
 }
-console.log(`sweep: ${shards}/24 shard files, ${planned} chains planned, ${errors} errors, longest shard ${minutes} min, best ${best ? best[1] + ' Pokémon (' + best[2] + ' catches): ' + best[0].join('-') : 'none yet'}`);
+const name = r => { const o = []; if (!r.obey) o.push('obedience off'); if (!r.vc) o.push('VC off'); if (r.frlgSwitch) o.push('FRLG Switch'); if (!r.gifts) o.push('gifts off'); if (r.tms) o.push('TMs on'); if (r.delta !== 2) o.push('+' + r.delta); return o.join(', ') || 'standard'; };
+for (const [k, s] of Object.entries(sets)) console.log(`${name(s.rules).padEnd(14)} ${String(s.shards).padStart(2)}/24 shards, ${String(s.planned).padStart(4)}/2592 chains, ${s.errors} errors, longest ${s.minutes} min, best ${s.best ? s.best[1] + ' Pokémon (' + s.best[2] + ' catches) ' + s.best[0].join('-') : 'none yet'}`);
