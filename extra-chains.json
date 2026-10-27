@@ -1,0 +1,4 @@
+[
+  { "name": "Yellow + Emerald", "chain": ["Y", "E"] },
+  { "name": "Yellow + Emerald, TMs on", "chain": ["Y", "E"], "rules": { "tms": true } }
+]

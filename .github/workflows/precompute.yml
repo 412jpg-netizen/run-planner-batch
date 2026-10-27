@@ -1,0 +1,51 @@
+name: Precompute Through Time plans
+# Run by hand from the Actions tab ("Run workflow"). One job per rule set runs on its own GitHub machine, so nothing uses your PC.
+# Each job uploads its result JSONs as an artifact; download them all, then merge with tools/merge-through-time.js.
+on:
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: 'Regex on "kind|name" to limit the jobs (empty = all rule sets)'
+        required: false
+        default: ''
+      extra:
+        description: 'Extra chains file (default extra-chains.json; "none" to skip)'
+        required: false
+        default: 'extra-chains.json'
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - 'best\|default'
+          - 'best\|obey off'
+          - 'best\|VC off'
+          - 'best\|FRLG on Switch'
+          - 'best\|gifts off'
+          - 'best\|TMs on'
+          - 'best\|\+0'
+          - 'best\|\+5'
+          - 'chain'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Plan
+        env:
+          PT_FILTER: ${{ matrix.job }}
+          PT_WORKERS: 4
+          PT_EXTRA: ${{ inputs.extra != 'none' && inputs.extra || '' }}
+        run: |
+          if [ -n "${{ inputs.filter }}" ] && ! echo "${{ matrix.job }}" | grep -Eiq "${{ inputs.filter }}"; then echo "skipped by filter"; mkdir -p out/results; exit 0; fi
+          node tools/precompute-through-time.js out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-${{ strategy.job-index }}
+          path: out/
+          if-no-files-found: ignore
