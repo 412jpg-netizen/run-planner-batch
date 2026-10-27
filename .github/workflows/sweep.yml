@@ -36,7 +36,7 @@ jobs:
         env:
           PT_WORKERS: 4
           PT_CONC: 8
-          PT_RULES: ${{ inputs.rules }}
+          PT_RULES: ${{ inputs.rules != '' && inputs.rules || '{"obey":false}' }}   # push runs use obedience off (standard rules are already swept); Run workflow can override
         run: node tools/sweep-through-time.js ${{ matrix.shard }} 24 out
       - name: Commit this shard's summary
         if: always()
