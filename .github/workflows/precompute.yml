@@ -2,6 +2,9 @@ name: Precompute Through Time plans
 # Run by hand from the Actions tab ("Run workflow"). One job per rule set runs on its own GitHub machine, so nothing uses your PC.
 # Each job uploads its result JSONs as an artifact; download them all, then merge with tools/merge-through-time.js.
 on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/precompute.yml']
   workflow_dispatch:
     inputs:
       filter:
@@ -39,7 +42,7 @@ jobs:
         env:
           PT_FILTER: ${{ matrix.job }}
           PT_WORKERS: 4
-          PT_EXTRA: ${{ inputs.extra != 'none' && inputs.extra || '' }}
+          PT_EXTRA: ${{ (inputs.extra == 'none' && '') || inputs.extra || 'extra-chains.json' }}
         run: |
           if [ -n "${{ inputs.filter }}" ] && ! echo "${{ matrix.job }}" | grep -Eiq "${{ inputs.filter }}"; then echo "skipped by filter"; mkdir -p out/results; exit 0; fi
           node tools/precompute-through-time.js out
