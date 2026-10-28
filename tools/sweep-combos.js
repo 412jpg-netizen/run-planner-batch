@@ -6,7 +6,7 @@
 const fs = require('fs'), path = require('path'), { Worker } = require('worker_threads');
 const ROOT = path.join(__dirname, '..'), DATA = path.resolve(process.env.PT_DATA || path.join(ROOT, 'data')) + path.sep;
 const SIZE = +process.argv[2], SHARD = +process.argv[3], SHARDS = +process.argv[4], OUT = path.resolve(process.argv[5] || path.join(ROOT, 'out')), NW = +process.env.PT_WORKERS || 3, CONC = +process.env.PT_CONC || 6, KEEP = +process.env.PT_KEEP || 3;
-const ALL = ['RB', 'Y', 'GS', 'C', 'RS', 'E', 'FRLG', 'DP', 'PT', 'HGSS', 'BW', 'B2W2', 'XY', 'ORAS', 'SM', 'USUM', 'LGPE', 'SWSH', 'BDSP', 'PLA', 'SV', 'LZA'];
+const ALL = process.env.PT_GAMES ? process.env.PT_GAMES.split(',') : ['RB', 'Y', 'GS', 'C', 'RS', 'E', 'FRLG', 'DP', 'PT', 'HGSS', 'BW', 'B2W2', 'XY', 'ORAS', 'SM', 'USUM', 'LGPE', 'SWSH', 'BDSP', 'PLA', 'SV', 'LZA'];   // PT_GAMES=XY,ORAS,... limits the pool (e.g. post-Bank only)
 const choose = (n, k) => { let r = 1; for (let i = 1; i <= k; i++) r = r * (n - k + i) / i; return Math.round(r); };
 if (process.argv[2] === 'count') { for (let k = ALL.length; k >= 1; k--) console.log(k, choose(ALL.length, k)); process.exit(0); }
 if (!(SIZE >= 1 && SIZE <= ALL.length) || !(SHARDS > 0) || !(SHARD >= 0 && SHARD < SHARDS)) { console.error('usage: sweep-combos.js <size> <shard> <shards> [outDir]'); process.exit(1); }
