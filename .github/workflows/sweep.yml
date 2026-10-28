@@ -45,12 +45,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           f=$(ls out/full/*.gz)
-          tag=full-$(basename "$f" | sed -E 's/-[0-9]+of24.*//')
+          tag=full-$(basename "$f" | sed -E 's/\.json\.gz$//; s/of24$//')
           mkdir -p sweep/done; m="sweep/done/$(basename "$f").txt"; : > "$m"
-          gh release create "$tag" --target main --title "$tag" --notes "Full results, one gz per shard" >> "$m" 2>&1 || sleep 5
           ok=0
           for i in 1 2 3 4 5; do
-            if gh release upload "$tag" "$f" --clobber >> "$m" 2>&1; then ok=1; break; fi
+            if gh release create "$tag" "$f" --target main --title "$tag" --notes "Full results of one shard" >> "$m" 2>&1; then ok=1; break; fi
+            gh release delete "$tag" --cleanup-tag -y >> "$m" 2>&1 || true
             sleep 10
           done
           echo "upload ok=$ok" >> "$m"
