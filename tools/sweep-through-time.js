@@ -33,6 +33,7 @@ for (let i = 0; i < NW; i++) {
 const ce = CE.create({ planGame, games: DEX.games, avail: AVAIL, starters: STARTERS });
 fs.mkdirSync(path.join(OUT, 'sweep'), { recursive: true });
 const file = path.join(OUT, 'sweep', `${flags}-d${R.delta}-${String(SHARD).padStart(2, '0')}of${SHARDS}.json`), t0 = Date.now();
+const FULL = process.env.PT_FULL === '1', fulls = [];   // PT_FULL=1: also keep every chain's full result, gzipped to <outDir>/full/
 const rows = [], bestFull = [];   // bestFull: [{ total, catches, result }] kept sorted, KEEP long
 const log = s => console.log(((Date.now() - t0) / 60000).toFixed(1).padStart(6) + ' min  ' + s);
 const save = done => fs.writeFileSync(file, JSON.stringify({ shard: SHARD, shards: SHARDS, rules: R, done, total: mine.length, minutes: +((Date.now() - t0) / 60000).toFixed(1),
@@ -45,6 +46,7 @@ const save = done => fs.writeFileSync(file, JSON.stringify({ shard: SHARD, shard
       const chain = mine[i++];
       try {
         const r = await ce.planChain(chain.map(code => ({ code, ver: 1 })), R);
+        if (FULL) fulls.push(r);
         rows.push([chain, r.total, r.catches, r.games.map(g => g.ok ? g.newUsed : null), r.cleared]);
         if (r.cleared === chain.length) { bestFull.push({ total: r.total, catches: r.catches, result: r }); bestFull.sort((a, b) => a.total - b.total || a.catches - b.catches); bestFull.length = Math.min(bestFull.length, KEEP); }
       } catch (e) { rows.push([chain, null, null, null, 0, String(e && e.message || e).slice(0, 120)]); }
@@ -52,6 +54,8 @@ const save = done => fs.writeFileSync(file, JSON.stringify({ shard: SHARD, shard
     }
   };
   await Promise.all(Array.from({ length: CONC }, lane));
-  save(done); log(`finished: ${done} chains, best ${bestFull[0] ? bestFull[0].total + ' ' + bestFull[0].result.chain.join('-') : 'none'}`);
+  save(done);
+  if (FULL) { fs.mkdirSync(path.join(OUT, 'full'), { recursive: true }); fs.writeFileSync(file.replace(path.join(OUT, 'sweep'), path.join(OUT, 'full')) + '.gz', require('zlib').gzipSync(JSON.stringify(fulls), { level: 9 })); }
+  log(`finished: ${done} chains, best ${bestFull[0] ? bestFull[0].total + ' ' + bestFull[0].result.chain.join('-') : 'none'}`);
   process.exit(0);
 })();
