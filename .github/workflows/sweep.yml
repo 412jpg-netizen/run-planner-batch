@@ -46,9 +46,15 @@ jobs:
         run: |
           f=$(ls out/full/*.gz)
           tag=full-$(basename "$f" | sed -E 's/-[0-9]+of24.*//')
-          gh release create "$tag" --target main --title "$tag" --notes "Full results, one gz per shard" 2>/dev/null || sleep 5
-          for i in 1 2 3 4 5; do gh release upload "$tag" "$f" --clobber && break; sleep 10; done
-          mkdir -p sweep/done && basename "$f" > "sweep/done/$(basename "$f").txt"
+          mkdir -p sweep/done; m="sweep/done/$(basename "$f").txt"; : > "$m"
+          gh release create "$tag" --target main --title "$tag" --notes "Full results, one gz per shard" >> "$m" 2>&1 || sleep 5
+          ok=0
+          for i in 1 2 3 4 5; do
+            if gh release upload "$tag" "$f" --clobber >> "$m" 2>&1; then ok=1; break; fi
+            sleep 10
+          done
+          echo "upload ok=$ok" >> "$m"
+          [ "$ok" = 1 ] || rm -f "$f"
       - name: Commit a done marker
         if: always()
         run: |
