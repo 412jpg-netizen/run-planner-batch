@@ -45,7 +45,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           f=$(ls out/full/*.gz)
-          tag=full-$(basename "$f" | sed -E 's/\.json\.gz$//; s/of24$//')
+          tag=f2-$(basename "$f" | sed -E 's/\.json\.gz$//; s/of24$//')
           mkdir -p sweep/done; m="sweep/done/$(basename "$f").txt"; : > "$m"
           ok=0
           for i in 1 2 3 4 5; do
