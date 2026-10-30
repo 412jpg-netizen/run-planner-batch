@@ -1,0 +1,55 @@
+name: Sweep post-Bank combos
+# Plans every subset of the 10 post-Bank games (XY .. LZA, 1,023 chains) for each rule set, one rule set per GitHub machine.
+# Sizes run largest first (10 games down to 1). Each size's summary is committed to combos/ as soon as it finishes; a size whose
+# summary is already there (from another job or Hoss's PC) is skipped. Start: push a change to this file, or Run workflow.
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/combos.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: combos
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  combos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        rules: ['{"delta":2,"obey":true,"vc":true,"frlgSwitch":true,"gifts":true,"tms":true}', '{"delta":2,"obey":true,"vc":true,"frlgSwitch":true,"gifts":true,"tms":false}', '{"delta":2,"obey":true,"vc":true,"frlgSwitch":true,"gifts":false,"tms":true}', '{"delta":2,"obey":true,"vc":true,"frlgSwitch":true,"gifts":false,"tms":false}', '{"delta":2,"obey":true,"vc":true,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":2,"obey":true,"vc":true,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":2,"obey":true,"vc":true,"frlgSwitch":false,"gifts":false,"tms":false}', '{"delta":2,"obey":true,"vc":false,"frlgSwitch":true,"gifts":true,"tms":true}', '{"delta":2,"obey":true,"vc":false,"frlgSwitch":true,"gifts":true,"tms":false}', '{"delta":2,"obey":true,"vc":false,"frlgSwitch":true,"gifts":false,"tms":true}', '{"delta":2,"obey":true,"vc":false,"frlgSwitch":true,"gifts":false,"tms":false}', '{"delta":2,"obey":true,"vc":false,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":2,"obey":true,"vc":false,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":2,"obey":true,"vc":false,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":2,"obey":true,"vc":false,"frlgSwitch":false,"gifts":false,"tms":false}', '{"delta":2,"obey":false,"vc":true,"frlgSwitch":true,"gifts":true,"tms":true}', '{"delta":2,"obey":false,"vc":true,"frlgSwitch":true,"gifts":true,"tms":false}', '{"delta":2,"obey":false,"vc":true,"frlgSwitch":true,"gifts":false,"tms":true}', '{"delta":2,"obey":false,"vc":true,"frlgSwitch":true,"gifts":false,"tms":false}', '{"delta":2,"obey":false,"vc":true,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":2,"obey":false,"vc":true,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":2,"obey":false,"vc":true,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":2,"obey":false,"vc":true,"frlgSwitch":false,"gifts":false,"tms":false}', '{"delta":2,"obey":false,"vc":false,"frlgSwitch":true,"gifts":true,"tms":true}', '{"delta":2,"obey":false,"vc":false,"frlgSwitch":true,"gifts":true,"tms":false}', '{"delta":2,"obey":false,"vc":false,"frlgSwitch":true,"gifts":false,"tms":true}', '{"delta":2,"obey":false,"vc":false,"frlgSwitch":true,"gifts":false,"tms":false}', '{"delta":2,"obey":false,"vc":false,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":2,"obey":false,"vc":false,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":2,"obey":false,"vc":false,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":2,"obey":false,"vc":false,"frlgSwitch":false,"gifts":false,"tms":false}', '{"delta":5,"obey":true,"vc":true,"frlgSwitch":true,"gifts":true,"tms":true}', '{"delta":5,"obey":true,"vc":true,"frlgSwitch":true,"gifts":true,"tms":false}', '{"delta":5,"obey":true,"vc":true,"frlgSwitch":true,"gifts":false,"tms":true}', '{"delta":5,"obey":true,"vc":true,"frlgSwitch":true,"gifts":false,"tms":false}', '{"delta":5,"obey":true,"vc":true,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":5,"obey":true,"vc":true,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":5,"obey":true,"vc":true,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":5,"obey":true,"vc":true,"frlgSwitch":false,"gifts":false,"tms":false}', '{"delta":5,"obey":true,"vc":false,"frlgSwitch":true,"gifts":true,"tms":true}', '{"delta":5,"obey":true,"vc":false,"frlgSwitch":true,"gifts":true,"tms":false}', '{"delta":5,"obey":true,"vc":false,"frlgSwitch":true,"gifts":false,"tms":true}', '{"delta":5,"obey":true,"vc":false,"frlgSwitch":true,"gifts":false,"tms":false}', '{"delta":5,"obey":true,"vc":false,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":5,"obey":true,"vc":false,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":5,"obey":true,"vc":false,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":5,"obey":true,"vc":false,"frlgSwitch":false,"gifts":false,"tms":false}', '{"delta":5,"obey":false,"vc":true,"frlgSwitch":true,"gifts":true,"tms":true}', '{"delta":5,"obey":false,"vc":true,"frlgSwitch":true,"gifts":true,"tms":false}', '{"delta":5,"obey":false,"vc":true,"frlgSwitch":true,"gifts":false,"tms":true}', '{"delta":5,"obey":false,"vc":true,"frlgSwitch":true,"gifts":false,"tms":false}', '{"delta":5,"obey":false,"vc":true,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":5,"obey":false,"vc":true,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":5,"obey":false,"vc":true,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":5,"obey":false,"vc":true,"frlgSwitch":false,"gifts":false,"tms":false}', '{"delta":5,"obey":false,"vc":false,"frlgSwitch":true,"gifts":true,"tms":true}', '{"delta":5,"obey":false,"vc":false,"frlgSwitch":true,"gifts":true,"tms":false}', '{"delta":5,"obey":false,"vc":false,"frlgSwitch":true,"gifts":false,"tms":true}', '{"delta":5,"obey":false,"vc":false,"frlgSwitch":true,"gifts":false,"tms":false}', '{"delta":5,"obey":false,"vc":false,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":5,"obey":false,"vc":false,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":5,"obey":false,"vc":false,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":5,"obey":false,"vc":false,"frlgSwitch":false,"gifts":false,"tms":false}', '{"delta":0,"obey":true,"vc":true,"frlgSwitch":true,"gifts":true,"tms":true}', '{"delta":0,"obey":true,"vc":true,"frlgSwitch":true,"gifts":true,"tms":false}', '{"delta":0,"obey":true,"vc":true,"frlgSwitch":true,"gifts":false,"tms":true}', '{"delta":0,"obey":true,"vc":true,"frlgSwitch":true,"gifts":false,"tms":false}', '{"delta":0,"obey":true,"vc":true,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":0,"obey":true,"vc":true,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":0,"obey":true,"vc":true,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":0,"obey":true,"vc":true,"frlgSwitch":false,"gifts":false,"tms":false}', '{"delta":0,"obey":true,"vc":false,"frlgSwitch":true,"gifts":true,"tms":true}', '{"delta":0,"obey":true,"vc":false,"frlgSwitch":true,"gifts":true,"tms":false}', '{"delta":0,"obey":true,"vc":false,"frlgSwitch":true,"gifts":false,"tms":true}', '{"delta":0,"obey":true,"vc":false,"frlgSwitch":true,"gifts":false,"tms":false}', '{"delta":0,"obey":true,"vc":false,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":0,"obey":true,"vc":false,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":0,"obey":true,"vc":false,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":0,"obey":true,"vc":false,"frlgSwitch":false,"gifts":false,"tms":false}', '{"delta":0,"obey":false,"vc":true,"frlgSwitch":true,"gifts":true,"tms":true}', '{"delta":0,"obey":false,"vc":true,"frlgSwitch":true,"gifts":true,"tms":false}', '{"delta":0,"obey":false,"vc":true,"frlgSwitch":true,"gifts":false,"tms":true}', '{"delta":0,"obey":false,"vc":true,"frlgSwitch":true,"gifts":false,"tms":false}', '{"delta":0,"obey":false,"vc":true,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":0,"obey":false,"vc":true,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":0,"obey":false,"vc":true,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":0,"obey":false,"vc":true,"frlgSwitch":false,"gifts":false,"tms":false}', '{"delta":0,"obey":false,"vc":false,"frlgSwitch":true,"gifts":true,"tms":true}', '{"delta":0,"obey":false,"vc":false,"frlgSwitch":true,"gifts":true,"tms":false}', '{"delta":0,"obey":false,"vc":false,"frlgSwitch":true,"gifts":false,"tms":true}', '{"delta":0,"obey":false,"vc":false,"frlgSwitch":true,"gifts":false,"tms":false}', '{"delta":0,"obey":false,"vc":false,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":0,"obey":false,"vc":false,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":0,"obey":false,"vc":false,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":0,"obey":false,"vc":false,"frlgSwitch":false,"gifts":false,"tms":false}']   # 95 rule sets; {"delta":2,"obey":true,"vc":true,"gifts":true} was done locally
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Plan every size, largest first
+        env:
+          PT_WORKERS: 4
+          PT_CONC: 8
+          PT_RULES: ${{ matrix.rules }}
+          PT_GAMES: XY,ORAS,SM,USUM,LGPE,SWSH,BDSP,PLA,SV,LZA
+        run: |
+          git config user.name "planner-batch"
+          git config user.email "planner-batch@users.noreply.github.com"
+          mkdir -p combos
+          for s in 10 9 8 7 6 5 4 3 2 1; do
+            git pull -q --rebase origin main || true
+            f=$(node tools/combo-name.js $s)
+            if node tools/combo-name.js done "combos/$f"; then echo "skip $f (already done)"; continue; fi
+            node tools/sweep-combos.js $s 0 1 out
+            cp "out/sweep/$f" "combos/$f"
+            git add "combos/$f"
+            git commit -q -m "Combos $f" || continue
+            for i in $(seq 1 25); do
+              git pull -q --rebase origin main && git push -q origin main && break
+              # same summary already pushed by another runner: drop ours, theirs is equivalent
+              if [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then git rebase --abort; git reset -q --keep origin/main; break; fi
+              sleep $((RANDOM % 10 + 3))
+            done
+          done
