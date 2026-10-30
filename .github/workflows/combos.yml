@@ -1,7 +1,8 @@
 name: Sweep post-Bank combos
 # Plans every subset of the 10 post-Bank games (XY .. LZA, 1,023 chains) for each rule set, one rule set per GitHub machine.
 # Sizes run largest first (10 games down to 1). Each size's summary is committed to combos/ as soon as it finishes; a size whose
-# summary is already there (from another job or Hoss's PC) is skipped. Start: push a change to this file, or Run workflow.
+# summary is already there (from another job or Hoss's PC) is skipped. Every chain's full result is uploaded per size to a
+# release tagged c1-<flags>-d<delta>-sNN (releases are immutable: use a new prefix for a rerun). Start: push a change to this file, or Run workflow.
 on:
   push:
     branches: [main]
@@ -34,6 +35,8 @@ jobs:
           PT_CONC: 8
           PT_RULES: ${{ matrix.rules }}
           PT_GAMES: XY,ORAS,SM,USUM,LGPE,SWSH,BDSP,PLA,SV,LZA
+          PT_FULL: '1'
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "planner-batch"
           git config user.email "planner-batch@users.noreply.github.com"
@@ -44,6 +47,13 @@ jobs:
             if node tools/combo-name.js done "combos/$f"; then echo "skip $f (already done)"; continue; fi
             node tools/sweep-combos.js $s 0 1 out
             cp "out/sweep/$f" "combos/$f"
+            tag="c1-${f%-0of1.json}"
+            for i in 1 2 3 4 5; do
+              gh release create "$tag" "out/full/$f.gz" --target main --title "$tag" --notes "Full results, post-Bank combos" && break
+              gh release delete "$tag" --cleanup-tag -y || true
+              sleep 10
+            done
+            rm -f "out/full/$f.gz"
             git add "combos/$f"
             git commit -q -m "Combos $f" || continue
             for i in $(seq 1 25); do
