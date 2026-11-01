@@ -11,7 +11,7 @@
 const fs = require('fs'), path = require('path'), zlib = require('zlib'), crypto = require('crypto');
 const GAMES = ['RB', 'Y', 'GS', 'C', 'RS', 'E', 'FRLG', 'DP', 'PT', 'HGSS', 'BW', 'B2W2', 'XY', 'ORAS', 'SM', 'USUM', 'LGPE', 'SWSH', 'BDSP', 'PLA', 'SV', 'LZA'];
 const BIT = Object.fromEntries(GAMES.map((g, i) => [g, i]));
-const GEN12 = new Set(['RB', 'Y', 'GS', 'C']), GEN7UP = new Set(GAMES.slice(14)), GEN8UP = new Set(GAMES.slice(17));
+const GEN12 = new Set(['RB', 'Y', 'GS', 'C']), GEN7UP = new Set(GAMES.slice(14));
 const OUT = path.resolve(process.argv[2]);
 if (!OUT || process.argv.length < 4) { console.error('usage: build-steps.js <outDir> <file-or-dir> [...]'); process.exit(1); }
 
@@ -20,14 +20,15 @@ const stepId = (chain, versions) => {
   const hex = '0x' + mask(chain).toString(16).toUpperCase().padStart(6, '0');
   return versions && versions.some(v => v !== 1) ? hex + '.' + versions.join('') : hex;
 };
-/* only the toggles that can change this chain: VC needs a Gen 1-2 game and a Gen 7+ game; FRLG on Switch needs FRLG and a Gen 8+ game */
+/* only the toggles that can change this chain: VC needs a Gen 1-2 game and a Gen 7+ game (checked: no effect on Gen 1-5 openings);
+   FRLG on Switch removes FRLG's link trades and Pal Park, so it needs FRLG plus any Gen 3+ game (checked on the openings sweep) */
 function ruleKey(R, chain) {
   const k = ['d' + R.delta];
   if (R.obey !== false) k.push('obey');
   if (R.gifts !== false) k.push('gifts');
   for (const t of ['tms', 'trades', 'events', 'legends']) if (R[t]) k.push(t);
   if (R.vc !== false && chain.some(c => GEN12.has(c)) && chain.some(c => GEN7UP.has(c))) k.push('vc');
-  if (R.frlgSwitch && chain.includes('FRLG') && chain.some(c => GEN8UP.has(c))) k.push('frlgsw');
+  if (R.frlgSwitch && chain.includes('FRLG') && chain.some(c => c !== 'FRLG' && BIT[c] >= BIT.RS)) k.push('frlgsw');
   return k.join('-');
 }
 const kindOf = chain => chain.every(c => BIT[c] < 12) ? 'open' : 'tail';
