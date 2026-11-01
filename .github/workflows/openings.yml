@@ -1,0 +1,66 @@
+name: V2 openings sweep
+# DEXCORE V2: plans every Gen 1 to 5 opening, i.e. every non-empty subset of the 12 games RB .. B2W2 in release order (4,095 chains),
+# for 24 rule sets (VC and FRLG-on-Switch can't change an opening; 2 extra jobs check that). Sizes run largest first (12 down to 1).
+# Each finished size: summary committed to openings/ on this branch, full results (games + roster = the team carried out) uploaded to
+# release o1-<flags>-d<delta>-sNN. A size already in openings/ is skipped, so a timed-out job can simply be rerun.
+# Capped at 6 runners so the post-Switch / Through Time sweeps keep the rest.
+on:
+  push:
+    branches: [v2-openings]
+    paths: ['.github/workflows/openings.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: openings
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  openings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        rules: ['{"delta":2,"obey":true,"vc":true,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":2,"obey":true,"vc":true,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":2,"obey":true,"vc":true,"frlgSwitch":false,"gifts":false,"tms":false}', '{"delta":2,"obey":true,"vc":true,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":2,"obey":false,"vc":true,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":2,"obey":false,"vc":true,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":2,"obey":false,"vc":true,"frlgSwitch":false,"gifts":false,"tms":false}', '{"delta":2,"obey":false,"vc":true,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":0,"obey":true,"vc":true,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":0,"obey":true,"vc":true,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":0,"obey":true,"vc":true,"frlgSwitch":false,"gifts":false,"tms":false}', '{"delta":0,"obey":true,"vc":true,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":0,"obey":false,"vc":true,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":0,"obey":false,"vc":true,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":0,"obey":false,"vc":true,"frlgSwitch":false,"gifts":false,"tms":false}', '{"delta":0,"obey":false,"vc":true,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":5,"obey":true,"vc":true,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":5,"obey":true,"vc":true,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":5,"obey":true,"vc":true,"frlgSwitch":false,"gifts":false,"tms":false}', '{"delta":5,"obey":true,"vc":true,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":5,"obey":false,"vc":true,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":5,"obey":false,"vc":true,"frlgSwitch":false,"gifts":true,"tms":true}', '{"delta":5,"obey":false,"vc":true,"frlgSwitch":false,"gifts":false,"tms":false}', '{"delta":5,"obey":false,"vc":true,"frlgSwitch":false,"gifts":false,"tms":true}', '{"delta":2,"obey":true,"vc":false,"frlgSwitch":false,"gifts":true,"tms":false}', '{"delta":2,"obey":true,"vc":true,"frlgSwitch":true,"gifts":true,"tms":false}']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Plan every size, largest first
+        env:
+          PT_WORKERS: 4
+          PT_CONC: 8
+          PT_RULES: ${{ matrix.rules }}
+          PT_GAMES: RB,Y,GS,C,RS,E,FRLG,DP,PT,HGSS,BW,B2W2
+          PT_FULL: '1'
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "planner-batch"
+          git config user.email "planner-batch@users.noreply.github.com"
+          mkdir -p openings
+          for s in 12 11 10 9 8 7 6 5 4 3 2 1; do
+            git pull -q --rebase origin v2-openings || true
+            f=$(node tools/combo-name.js $s)
+            if node tools/combo-name.js done "openings/$f"; then echo "skip $f (already done)"; continue; fi
+            node tools/sweep-combos.js $s 0 1 out
+            cp "out/sweep/$f" "openings/$f"
+            tag="o1-${f%-0of1.json}"
+            for i in 1 2 3 4 5; do
+              gh release create "$tag" "out/full/$f.gz" --target v2-openings --title "$tag" --notes "Full results, V2 Gen 1-5 openings" && break
+              gh release delete "$tag" --cleanup-tag -y || true
+              sleep 10
+            done
+            rm -f "out/full/$f.gz"
+            git add "openings/$f"
+            git commit -q -m "Openings $f" || continue
+            for i in $(seq 1 25); do
+              git pull -q --rebase origin v2-openings && git push -q origin v2-openings && break
+              if [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then git rebase --abort; git reset -q --keep origin/v2-openings; break; fi
+              sleep $((RANDOM % 10 + 3))
+            done
+          done
