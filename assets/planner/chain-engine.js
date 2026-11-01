@@ -20,12 +20,16 @@
   /* the story stage (badges held) from which Pokémon sent from older games can arrive; 99 = only after the story (Pal Park and
      the Poké Transfer Lab need the National Pokédex); null = this game can't receive them at all */
   const ARRIVE = { RB: null, Y: null, GS: 3, C: 3, RS: null, E: null, FRLG: null, DP: 99, PT: 99, HGSS: 99, BW: 99, B2W2: 99,
-    XY: 0, ORAS: 0, SM: 0, USUM: 0, LGPE: null, SWSH: 0, BDSP: 0, PLA: 0, SV: 0, LZA: 0 };
+    XY: 0, ORAS: 0, SM: 0, USUM: 0, LGPE: null, SWSH: 0, BDSP: 0, PLA: 0, SV: 0, LZA: 0, IOA: 0, CT: 0, TM: 0, ID: 0, MD: 0 };
+  /* DLC as a chain step (Nov 1 2026, Hoss: all post-Switch chains, all types): played on the base game's save, so it needs its base
+     earlier in the chain (same version), keeps the base game's starter instead of picking a new one, and the whole team is there from the start */
+  const DLC = { IOA: 'SWSH', CT: 'SWSH', TM: 'SV', ID: 'SV', MD: 'LZA' };
   const HOW = { GS: 'Time Capsule (after meeting Bill in Ecruteak)', C: 'Time Capsule (after meeting Bill in Ecruteak)',
     DP: 'Pal Park (after the National Pokédex)', PT: 'Pal Park (after the National Pokédex)', HGSS: 'Pal Park (after the National Pokédex)',
     BW: 'Poké Transfer Lab (after the National Pokédex)', B2W2: 'Poké Transfer Lab (after the National Pokédex)',
     XY: 'Poké Transporter + Pokémon Bank', ORAS: 'Poké Transporter + Pokémon Bank', SM: 'Pokémon Bank', USUM: 'Pokémon Bank',
-    SWSH: 'Pokémon HOME', BDSP: 'Pokémon HOME', PLA: 'Pokémon HOME', SV: 'Pokémon HOME', LZA: 'Pokémon HOME' };
+    SWSH: 'Pokémon HOME', BDSP: 'Pokémon HOME', PLA: 'Pokémon HOME', SV: 'Pokémon HOME', LZA: 'Pokémon HOME',
+    IOA: 'Same save (DLC)', CT: 'Same save (DLC)', TM: 'Same save (DLC)', ID: 'Same save (DLC)', MD: 'Same save (DLC)' };
   const rank = (a, b) => a.extra - b.extra || b.margin - a.margin || b.solo_clears - a.solo_clears || a.effort - b.effort;   // engine.js's own order
   /* Minimum battles (Oct 23 2026): each game's starter is the one with the fewest battles, and the team carries the levels its real XP
      reached into the next game (instead of the last boss's level + the margin) */
@@ -63,11 +67,11 @@
     const memo = new Map();
     let tasks = 0, tasksDone = 0;
     function planAll(code, o, onTask) {
-      const k = JSON.stringify([code, o.delta, o.version, o.obey, o.gifts, o.tms, o.trades, o.events, o.legends, o.minBattles ? 1 : 0, o.mbHeal === false ? 0 : 1, (o.carry || []).map(c => [c.key, c.id, c.lv, c.at, c.used ? 1 : 0])]);
+      const k = JSON.stringify([code, o.only || 0, o.delta, o.version, o.obey, o.gifts, o.tms, o.trades, o.events, o.legends, o.minBattles ? 1 : 0, o.mbHeal === false ? 0 : 1, (o.carry || []).map(c => [c.key, c.id, c.lv, c.at, c.used ? 1 : 0])]);
       if (memo.has(k)) return memo.get(k);
-      const list = (starters[code] || []).length ? starters[code] : [null];
+      const list = o.only ? [o.only] : (starters[code] || []).length ? starters[code] : [null];   // o.only: a DLC keeps its base game's starter
       tasks += list.length;
-      const p = Promise.all(list.map(n => planGame(code, Object.assign({}, o, { starter: n })).then(r => { tasksDone++; if (onTask) onTask(code, r); return r; })))
+      const p = Promise.all(list.map(n => planGame(code, Object.assign({}, o, { starter: n })).then(r => { if (n != null) r.starters.forEach(s => { s.n = n; }); tasksDone++; if (onTask) onTask(code, r); return r; })))
         .then(parts => {
           const r = Object.assign({}, parts[0], { starters: parts.flatMap(x => x.starters) });
           const ok = r.starters.filter(okOf(o)).sort(rankOf(o));
@@ -80,20 +84,21 @@
     }
     // what the pool can bring into this game, then the plan (a game with no plan at the margin is planned again 3 levels higher)
     async function prepare(pool, step, R, onTask) {
-      const code = step.code;
-      const can = pool.filter(p => reach(p.from, code, R));
+      const code = step.code, baseS = DLC[code] ? pool.find(p => p.key === DLC[code] + ':starter') : null;
+      if (DLC[code] && !baseS) throw new Error(code + ' needs ' + DLC[code] + ' earlier in the chain');
+      const can = pool.filter(p => p !== baseS && (DLC[code] && p.from === DLC[code] || reach(p.from, code, R)));
       const fits = can.filter(p => exists(p.id, code)), noFit = can.filter(p => !exists(p.id, code));
-      const carry = fits.filter(p => arriveAt(p.from, code) < 99).map(p => ({ id: p.id, lv: p.lv, at: arriveAt(p.from, code), from: p.from, key: p.key, used: p.used }));
-      const later = fits.filter(p => arriveAt(p.from, code) >= 99);     // only after the story: they pass through on the way to later games
+      const carry = fits.filter(p => DLC[code] && p.from === DLC[code] || arriveAt(p.from, code) < 99).map(p => ({ id: p.id, lv: p.lv, at: DLC[code] && p.from === DLC[code] ? 0 : arriveAt(p.from, code), from: p.from, key: p.key, used: p.used }));
+      const later = fits.filter(p => !(DLC[code] && p.from === DLC[code]) && arriveAt(p.from, code) >= 99);     // only after the story: they pass through on the way to later games
       const arrive = carry.length ? Math.min(...carry.map(c => c.at)) : ARRIVE[code];
       let r = null, delta = R.delta;
       for (const d of [R.delta, R.delta + 3]) {
         delta = d;
         r = await planAll(code, { delta: d, version: step.ver || 1, carry, obey: R.obey !== false,
-          gifts: R.gifts !== false, tms: !!R.tms, trades: !!R.trades, events: !!R.events, legends: !!R.legends, minBattles: !!R.minBattles, mbHeal: R.mbHeal !== false }, onTask);
+          only: baseS ? baseS.sn : undefined, gifts: R.gifts !== false, tms: !!R.tms, trades: !!R.trades, events: !!R.events, legends: !!R.legends, minBattles: !!R.minBattles, mbHeal: R.mbHeal !== false }, onTask);
         if (r.best) break;
       }
-      return { step, r, delta, later, fits, noFit, arrive };
+      return { step, r, delta, later, fits, noFit, arrive, baseS };
     }
     // play one starter's plan: record the game, add its starter and catches to the pool (mutates pool)
     function apply(pool, prep, e, R) {
@@ -123,7 +128,10 @@
       for (const p of later) g.postgame.push({ key: p.key, id: p.id, name: p.name, from: p.from, via: via(p.from, code, R) });
       const fs = fin('starter'), sNames = e.starter_path.split(' → ');
       const sUsed = mb ? fought('starter', sNames.concat(fs ? [fs.name] : [])) : !!e.starter_used;
-      pool.push({ key: code + ':starter', id: fs ? fs.id : e.starter_final_id, name: fs ? fs.name : e.starter_final, lv: fs ? fs.lv : lvEnd, from: code, fromName: r.name, kind: 'starter',
+      if (prep.baseS) {                                                  // DLC: the base game's starter carries on, no new one
+        const b = prep.baseS; b.id = fs ? fs.id : e.starter_final_id; b.name = fs ? fs.name : e.starter_final; b.lv = Math.max(b.lv, fs ? fs.lv : lvEnd);
+        if (sUsed) { b.used = true; b.usedIn.push(code); }
+      } else pool.push({ key: code + ':starter', id: fs ? fs.id : e.starter_final_id, name: fs ? fs.name : e.starter_final, lv: fs ? fs.lv : lvEnd, from: code, fromName: r.name, kind: 'starter', sn: e.n,
         used: sUsed, usedIn: sUsed ? [code] : [], base: e.starter_id, baseName: e.starter });
       g.starter = { id: e.starter_id, name: e.starter, final_id: fs ? fs.id : e.starter_final_id, final: fs ? fs.name : e.starter_final, used: sUsed, solo: e.solo_clears };
       for (const c of mb ? e.mb.catchList : e.catches) {
@@ -147,7 +155,7 @@
         chain: chain.map(s => s.code), versions: chain.map(s => s.ver || 1), rules: R, games,
         total: used.length, catches: used.filter(p => p.kind !== 'starter').length, starters: used.filter(p => p.kind === 'starter').length,
         cleared: games.filter(g => g.ok).length, battles: R.minBattles ? games.reduce((a, g) => a + (g.battles || 0), 0) : undefined,
-        roster: pool.map(p => ({ key: p.key, id: p.id, name: p.name, base: p.base, baseName: p.baseName, from: p.from, fromName: p.fromName, kind: p.kind, used: p.used, usedIn: p.usedIn, lv: p.lv }))
+        roster: pool.map(p => ({ key: p.key, id: p.id, name: p.name, base: p.base, baseName: p.baseName, from: p.from, fromName: p.fromName, kind: p.kind, sn: p.sn, used: p.used, usedIn: p.usedIn, lv: p.lv }))
       }, extra || {});
     };
 
@@ -162,7 +170,7 @@
         const pickS = step.starter && prep.r.starters.some(s => s.ok && s.starter === step.starter) ? step.starter : prep.r.best;   // step.starter: replay a chain found before
         const e = pickS ? prep.r.starters.find(s => s.starter === pickS) : null;
         const g = apply(pool, prep, e, R);
-        if (R.keepPool) g.pool = pool.map(p => ({ key: p.key, id: p.id, name: p.name, base: p.base, baseName: p.baseName, from: p.from, fromName: p.fromName, kind: p.kind, used: p.used, usedIn: p.usedIn.slice(), lv: p.lv }));   // roster shape, so planChain(..., {pool, games}) can resume   // batch only: carried pool after this game, so a stored step can seed live compute
+        if (R.keepPool) g.pool = pool.map(p => ({ key: p.key, id: p.id, name: p.name, base: p.base, baseName: p.baseName, from: p.from, fromName: p.fromName, kind: p.kind, sn: p.sn, used: p.used, usedIn: p.usedIn.slice(), lv: p.lv }));   // roster shape, so planChain(..., {pool, games}) can resume   // batch only: carried pool after this game, so a stored step can seed live compute
         games.push(g);
         if (onProg) onProg({ phase: 'done', game: step.code, index: n + 1, total: chain.length, done: g });
       }

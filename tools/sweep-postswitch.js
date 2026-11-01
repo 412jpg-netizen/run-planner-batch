@@ -7,8 +7,17 @@ const fs = require('fs'), path = require('path'), { Worker } = require('worker_t
 const ROOT = path.join(__dirname, '..'), DATA = path.resolve(process.env.PT_DATA || path.join(ROOT, 'data')) + path.sep;
 const OUT = path.resolve(process.argv[2] && process.argv[2] !== 'count' ? process.argv[2] : path.join(ROOT, 'out')), NW = +process.env.PT_WORKERS || 3, CONC = +process.env.PT_CONC || 6, KEEP = +process.env.PT_KEEP || 3, SHARD = 0, SHARDS = 1;
 const PS = [['LGPE', 2], ['SWSH', 2], ['BDSP', 2], ['PLA', 1], ['SV', 2], ['LZA', 1]];   // [code, versions]
-const chains = []; (function pick(i, cur) { if (i === PS.length) { if (cur.length) chains.push(cur.slice()); return; }
+let chains = []; (function pick(i, cur) { if (i === PS.length) { if (cur.length) chains.push(cur.slice()); return; }
   const [c, n] = PS[i]; for (let v = 1; v <= n; v++) { cur.push(c + '@' + v); pick(i + 1, cur); cur.pop(); } pick(i + 1, cur); })(0, []);   // shared prefixes stay adjacent
+/* PT_DLC=1: only the chains with DLC (Nov 1 2026): each DLC follows its base game in the same version, in release order
+   (SWSH IOA CT, SV TM ID, LZA MD) = 4,373 - 323 = 4,050 chains per rule set; writes <flags>-d<delta>-dlc.json */
+const DLCS = { SWSH: ['IOA', 'CT'], SV: ['TM', 'ID'], LZA: ['MD'] }, DLCMODE = process.env.PT_DLC === '1';
+if (DLCMODE) {
+  const subsets = l => l.reduce((a, x) => a.concat(a.map(y => y.concat(x))), [[]]);   // keeps release order, [] first
+  chains = []; (function pick(i, cur) { if (i === PS.length) { if (cur.some(c => /^(IOA|CT|TM|ID|MD)@/.test(c))) chains.push(cur.slice()); return; }
+    const [c, n] = PS[i]; for (let v = 1; v <= n; v++) for (const d of subsets(DLCS[c] || [])) { const add = [c + '@' + v].concat(d.map(x => x + '@' + v)); cur.push(...add); pick(i + 1, cur); cur.length -= add.length; }
+    pick(i + 1, cur); })(0, []);
+}
 if (process.argv[2] === 'count') { console.log(chains.length); process.exit(0); }
 try { require('os').setPriority(10); } catch {}
 const CE = require(path.join(ROOT, 'assets', 'planner', 'chain-engine.js'));
@@ -32,7 +41,7 @@ for (let i = 0; i < NW; i++) {
 }
 const ce = CE.create({ planGame, games: DEX.games, avail: AVAIL, starters: STARTERS });
 fs.mkdirSync(path.join(OUT, 'sweep'), { recursive: true });
-const file = path.join(OUT, 'sweep', `${flags}-d${R.delta}-ps.json`), t0 = Date.now();
+const file = path.join(OUT, 'sweep', `${flags}-d${R.delta}-${DLCMODE ? 'dlc' : 'ps'}.json`), t0 = Date.now();
 const FULL = process.env.PT_FULL === '1', fulls = [];   // PT_FULL=1: also keep every chain's full result, gzipped to <outDir>/full/
 const rows = [], bestFull = [];   // bestFull: [{ total, catches, result }] kept sorted, KEEP long
 const log = s => console.log(((Date.now() - t0) / 60000).toFixed(1).padStart(6) + ' min  ' + s);
