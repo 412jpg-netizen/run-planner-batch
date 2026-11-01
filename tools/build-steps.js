@@ -4,7 +4,7 @@
    chains, so a stored step lets the page resume any longer chain with planChain(chain, R, onProg, {pool, games}).
    Step id = 22-bit mask of the games played, one bit per game in release order (RB = bit 0 .. LZA = bit 21), hex; chains that use a
    second version add '.' + one digit per game. Rule key = the toggles that can change the chain (see ruleKey).
-   Output, per rule key:  <outDir>/<kind>/<ruleKey>/head.txt (masks < 0x10) and <first4>.txt (rest, grouped by RB/Y/GS/C bits),
+   Output, per rule key:  <outDir>/<kind>/<ruleKey>/q0..q3.txt (steps grouped by the RB and Y bits of the mask),
    plus <outDir>/index/<ruleKey>.json (one row per stored chain) and <outDir>/manifest.json. .txt files hold base64(gzip(JSON)),
    because the artifact file store takes text and JSON but not raw gzip. */
 'use strict';
@@ -70,7 +70,7 @@ const pack = obj => zlib.gzipSync(JSON.stringify(obj), { level: 9 }).toString('b
 for (const [key, m] of store) {
   const groups = new Map();
   for (const [id, rec] of m) {
-    const mk = parseInt(id.slice(2, 8), 16), name = mk < 0x10 ? 'head' : (mk & 0xF).toString(16).toUpperCase();
+    const name = 'q' + (parseInt(id.slice(2, 8), 16) & 3);   // 4 files per rule key, by the RB and Y bits (~1 MB each for openings)
     if (!groups.has(name)) groups.set(name, {}); groups.get(name)[id] = rec;
   }
   for (const [name, steps] of groups) write(`${key}/${name}.txt`, pack({ v: 2, key, steps }));
