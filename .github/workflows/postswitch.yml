@@ -1,7 +1,7 @@
 name: Sweep post-Switch chains, all versions
 # Plans every post-Switch chain (each subset of LGPE, SWSH, BDSP, PLA, SV, LZA in release order) with every version choice
 # (Pikachu/Eevee, Sword/Shield, BD/SP, Scarlet/Violet): 323 chains per rule set, one rule set per GitHub machine.
-# Summary per rule set is committed to postswitch/<flags>-d<delta>-ps.json (skipped if already there); every chain's full result goes to
+# Summary per rule set is committed to postswitch2/<flags>-d<delta>-ps.json (skipped if already there); every chain's full result goes to
 # a release tagged ps1-<flags>-d<delta> (releases are immutable: use a new prefix for a rerun). Start: push a change to this file, or Run workflow.
 on:
   push:
@@ -35,22 +35,23 @@ jobs:
           PT_CONC: 8
           PT_RULES: ${{ matrix.rules }}
           PT_FULL: '1'
+          PT_POOL: '1'
           GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "planner-batch"
           git config user.email "planner-batch@users.noreply.github.com"
-          mkdir -p postswitch
+          mkdir -p postswitch2
           f=$(node -e "const R=Object.assign({delta:2,obey:true,vc:true,frlgSwitch:false,gifts:true,tms:false},JSON.parse(process.env.PT_RULES));console.log(['obey','vc','frlgSwitch','gifts','tms'].map(k=>R[k]?1:0).join('')+'-d'+R.delta+'-ps.json')")
-          if [ -f "postswitch/$f" ]; then echo "skip $f (already done)"; exit 0; fi
+          if [ -f "postswitch2/$f" ]; then echo "skip $f (already done)"; exit 0; fi
           node tools/sweep-postswitch.js out
-          cp "out/sweep/$f" "postswitch/$f"
-          tag="ps1-${f%-ps.json}"
+          cp "out/sweep/$f" "postswitch2/$f"
+          tag="ps2-${f%-ps.json}"
           for i in 1 2 3 4 5; do
-            gh release create "$tag" "out/full/$f.gz" --target postswitch-sweep --title "$tag" --notes "Full results, post-Switch chains, all versions" && break
+            gh release create "$tag" "out/full/$f.gz" --target postswitch-sweep --title "$tag" --notes "Full results, post-Switch chains, all versions, with carried pools" && break
             gh release delete "$tag" --cleanup-tag -y || true
             sleep 10
           done
-          git add "postswitch/$f"
+          git add "postswitch2/$f"
           git commit -q -m "Post-Switch $f" || exit 0
           for i in $(seq 1 25); do
             git pull -q --rebase origin postswitch-sweep && git push -q origin HEAD:postswitch-sweep && break
