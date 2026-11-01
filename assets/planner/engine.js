@@ -134,7 +134,7 @@ function dmg(att, mid, defn, gen, roll) {
 function mon(slot, lv, gen, moves, ability, item, iv, ev) {
   return { slot, lv, st: stats(slot, lv, gen, iv, ev), types: typesIn(slot.t, gen), moves, ability: gen >= 3 ? (ability || '') : '', item: item || '' };
 }
-// damage rolls assumed (Oct 26 2026, speedrun idea 8): [ours, theirs]. Safe = our lowest roll vs their full damage (the planner's rule);
+// damage rolls assumed (Oct 26 2026): [ours, theirs]. Safe = our lowest roll vs their full damage (the planner's rule);
 // Average = both 92.5%; Bold = our full roll vs their lowest. planGame sets it from o.risk; safeWins re-checks a line at Safe.
 const ROLLS = { safe: [0.85, 1.0], avg: [0.925, 0.925], bold: [1.0, 0.85] };
 let ROLL = ROLLS.safe;
@@ -435,7 +435,7 @@ async function planGame(code, opts = {}) {
   for (const n of needN) await loadLearn(n);
   // group route trainers by boss stage for per-fight summaries
   const rtByFight = [];
-  // XP density (Oct 26 2026, speedrun idea 14): XP per minute for one member fighting at the spot's own top level, trainers priced at
+  // XP density (Oct 26 2026): XP per minute for one member fighting at the spot's own top level, trainers priced at
   // 38 s + 12 s a Pokémon, wild battles at 28 s each; the Run page's cost table. Stage = story stage (0 = before the first boss)
   function routeXp() {
     const out = [];
@@ -579,9 +579,8 @@ async function planGame(code, opts = {}) {
         for (const f of bm[k][2]) if (duel(u, u.st[0], f, gen)[0]) hit++; }
       if (hit) useful.push([[ci, pi], hit]); } });
     useful.sort((a, b) => b[1] - a[1]); useful = useful.slice(0, 70).map(x => x[0]);
-    // speedrun categories (Oct 26 2026, idea 4): o.maxCatches caps the catches (0 = starter only); o.onePerPlace allows one catch per place (the Nuzlocke first-encounter rule)
+    // o.maxCatches caps the catches (0 = starter only)
     const sols = [], MAXX = Math.min(6 - nOwn, o.maxCatches != null ? +o.maxCatches : 99), BRANCH = 12; let seenT = new Set();   // carried Pokémon don't use up catch slots (they wait in the box)
-    const placeOf = ci => ci >= 0 ? ((candList[ci].info || {}).place || '') : '';
     function dfs(team, depth) {
       const [ok, fk, w] = teamOk(team);
       if (ok) { sols.push([team.length, team, w]); return; }
@@ -589,7 +588,6 @@ async function planGame(code, opts = {}) {
       let tried = 0;
       for (const cp of useful) {
         if (team.some(m => m[0] === cp[0])) continue;
-        if (o.onePerPlace && cp[0] >= 0 && team.some(m => m[0] >= 0 && placeOf(m[0]) === placeOf(cp[0]))) continue;
         if (!available(cp[0], fk)) continue;
         const t2 = team.concat([cp]), sk = tkey(t2); if (seenT.has(sk)) continue; seenT.add(sk);
         if (!clears(t2.filter(m => available(m[0], fk)), fk)[0]) continue;
@@ -628,11 +626,9 @@ async function planGame(code, opts = {}) {
         }
         return { ok: true, worst, info };
       };
-      // Any% route (Oct 26 2026, speedrun idea 2): o.speed walks for the least play time instead of the fewest battles. Seconds per action,
-      // the same table as the page's Splits card: a battle's worth is XP per second, and teams are ranked by the estimated run time.
+      // seconds per action, for the walk's estimated play time (the page's time-per-boss table uses the same table)
       const SC = { turn: [9, 9, 11, 11, 12, 13, 13, 14, 14][Math.max(0, Math.min(8, gen - 1))], swap: 6, boss: 45, trainer: 38, trainerMon: 12, wild: 28, catchTry: 45, catchHunt: 60, gift: 60, item: 8,
         travel: [90, 95, 105, 120, 125, 150, 160, 150, 160][Math.max(0, Math.min(8, gen - 1))] };
-      const speed = !!o.speed, tsec = t => SC.trainer + t.mons.length * SC.trainerMon;
       const stepSecs = st => (st.lines.length ? SC.boss + st.lines.reduce((a, l) => a + ((l.hko || 1) + (l.takes || 0)) * SC.turn + SC.swap, 0) : 0) + SC.travel
         + st.before.reduce((a, x) => a + (x.n || 1) * (x.t === 'catch' ? SC.catchTry + SC.catchHunt : x.t === 'gift' ? SC.gift : x.t === 'trainer' ? SC.trainer + (x.mons || 2) * SC.trainerMon : x.t === 'wild' ? SC.wild : x.t === 'item' ? SC.item : 0), 0);
       const evCap = gen >= 8 ? 252 : 100, noEv = code === 'LGPE' || code === 'PLA';   // Let's Go (Awakening Values from candies) and Legends: Arceus (Effort Levels) have no EVs
@@ -688,7 +684,7 @@ async function planGame(code, opts = {}) {
             tally.vitamins++; add('item', `${it} on ${monOf(tr).slot.name}`, { free: 1, us: monOf(tr).slot.id }); return true; }
           // the route trainer open by now worth the most XP to that member; in Gens 1-5 it fights alone if it can (no Exp. Share)
           const opts = rtList.map((t, i) => [t, i]).filter(([t, i]) => !used.has(i) && t.stage <= stK && t.top <= bm[k][3] + RT_CAP)   // far stronger than this boss: a post-game trainer in an early area
-            .map(([t, i]) => [t, i, t.mons.reduce((a, [n, l]) => a + xpGain(gen, n, l, tr.lv, true), 0)]).sort((a, b) => speed ? b[2] / tsec(b[0]) - a[2] / tsec(a[0]) : b[2] - a[2]);
+            .map(([t, i]) => [t, i, t.mons.reduce((a, [n, l]) => a + xpGain(gen, n, l, tr.lv, true), 0)]).sort((a, b) => b[2] - a[2]);
           let bt = null;
           for (const [t, i, x] of opts.slice(0, 12)) { const foes = t.mons.map(([n, l]) => plainMon(n, l)).filter(Boolean); if (!foes.length) { used.add(i); continue; }
             const solo = fight([tr], k, foes), r = solo.ok ? solo : fight(team_(), k, foes);
@@ -697,7 +693,7 @@ async function planGame(code, opts = {}) {
           let bw = null, bx = 0; const u = monOf(tr);
           for (const [st, n, l, pl] of grind) { if (st > stK || l >= tr.lv + 15) continue; const x = xpGain(gen, n, l, tr.lv, false); if (x <= bx) continue;   // 15+ levels above the member: not a grind target (post-game levels in a story area; gate 9, Oct 24 2026)
             const f = plainMon(n, l); if (!f || !duel(u, u.st[0], f, gen)[0]) continue; bw = [f, l, pl]; bx = x; }
-          if (bt && (!bw || (speed ? bt[3] / tsec(bt[0]) >= bx / SC.wild : bt[3] >= bx))) { const [t, i, r] = bt;
+          if (bt && (!bw || bt[3] >= bx)) { const [t, i, r] = bt;
             used.add(i); tally.trainers++; for (const l of r.info) gain(l.m, l.f, true);
             add('trainer', `${t.name} · ${t.place} (Lv ${t.top})`, { us: monOf(tr).slot.id, foe: (base(t.mons[t.mons.length - 1][0]) || {}).id, mons: t.mons.length, place: t.place }); return true; }
           if (!bw) return false;
@@ -739,7 +735,7 @@ async function planGame(code, opts = {}) {
         if (!p) { delete d.double; continue; }
         Object.assign(p, { boss: p.boss + ' & ' + d.boss, before: p.before.concat(d.before), lines: p.lines.concat(d.lines), team: d.team, margin: Math.min(p.margin, d.margin) }); steps.splice(i, 1); }
       const ok = !stuck, total = steps.length + tally.trainers + tally.wild + tally.catches, secs = Math.round(steps.reduce((a, st) => a + stepSecs(st), 0));
-      return Object.assign({ ok, stuck, total, secs, speed, wildLabel: code === 'LGPE' ? 'catch encounters' : 'wild battles', bosses: nBoss, worst: r2(worstAll), steps, final: mem.filter(m => m.joined).map(m => ({ name: monOf(m).slot.name, id: monOf(m).slot.id, lv: m.lv, key: m.ci + ':' + m.pi, pkey: m.ci >= 0 ? candList[m.ci].slot.id : team0[-m.ci - 1].carry ? team0[-m.ci - 1].carry.key : 'starter' })) }, tally);
+      return Object.assign({ ok, stuck, total, secs, wildLabel: code === 'LGPE' ? 'catch encounters' : 'wild battles', bosses: nBoss, worst: r2(worstAll), steps, final: mem.filter(m => m.joined).map(m => ({ name: monOf(m).slot.name, id: monOf(m).slot.id, lv: m.lv, key: m.ci + ':' + m.pi, pkey: m.ci >= 0 ? candList[m.ci].slot.id : team0[-m.ci - 1].carry ? team0[-m.ci - 1].carry.key : 'starter' })) }, tally);
     }
     let found = null;
     if (soloOk) found = [[baseTeam.length, baseTeam, soloW]];
@@ -808,7 +804,7 @@ async function planGame(code, opts = {}) {
         const MBT = o.mbTeams || 30;   // teams walked per starter
         mbCtx.of = Math.min(MBT, teams.length); mbCtx.starter = BYNUM[sn][0].name;
         for (const [ti, t] of teams.slice(0, MBT).entries()) { mbCtx.no = ti + 1; const r = simTeam(t);
-          if (!bestMb || (r.ok && !bestMb.ok) || (r.ok === bestMb.ok && ((o.speed ? r.secs - bestMb.secs : r.total - bestMb.total) || r.catches - bestMb.catches || bestMb.worst - r.worst) < 0)) bestMb = Object.assign(r, { team: t }); }
+          if (!bestMb || (r.ok && !bestMb.ok) || (r.ok === bestMb.ok && ((r.total - bestMb.total) || r.catches - bestMb.catches || bestMb.worst - r.worst) < 0)) bestMb = Object.assign(r, { team: t }); }
         entry.mb = Object.assign({}, bestMb, { team: undefined, catchList: describe(bestMb.team), teams: Math.min(MBT, teams.length) });
       }
     }
