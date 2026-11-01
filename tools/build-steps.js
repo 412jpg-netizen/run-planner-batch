@@ -71,7 +71,7 @@ const pack = obj => zlib.gzipSync(JSON.stringify(obj), { level: 9 }).toString('b
 for (const [key, m] of store) {
   const groups = new Map();
   for (const [id, rec] of m) {
-    const name = 'q' + (parseInt(id.slice(2, 8), 16) & 3);   // 4 files per rule key, by the RB and Y bits (~1 MB each for openings)
+    const name = 'q' + (parseInt(id.slice(2).split('.')[0], 16) & 3);   // 4 files per rule key, by the RB and Y bits (~1 MB each for openings)
     if (!groups.has(name)) groups.set(name, {}); groups.get(name)[id] = rec;
   }
   for (const [name, steps] of groups) write(`${key}/${name}.txt`, pack({ v: 2, key, steps }));
