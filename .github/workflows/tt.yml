@@ -1,6 +1,6 @@
 name: Sweep Through Time, largest first
 # Through Time = any of the 22 games in release order (generations may be skipped). Plans every chain of one size for all 96 rule sets,
-# then dispatches itself for the next part / next smaller size, down to stop_at. Summaries are committed to tt/ on this branch; every
+# then dispatches itself for the next part / next smaller size, down to the size in .github/tt-stop (edit it to stop early). Summaries are committed to tt/ on this branch; every
 # chain's full result (with each game's carried pool, PT_POOL) goes to a release tagged t1-<file>. A job already in tt/ is skipped.
 # At most 14 jobs at a time, leaving 6 of the 20 runners for the v2 openings sweep. Start: push a change to this file (starts at size 22), or Run workflow.
 on:
@@ -11,7 +11,7 @@ on:
     inputs:
       size: { description: 'Chain size to plan (22 = longest)', default: '22' }
       part: { description: 'Part of this size (250 jobs each)', default: '0' }
-      stop_at: { description: 'Smallest size to reach', default: '18' }
+      stop_at: { description: 'Unused (kept for runs already queued); the stop size is .github/tt-stop', default: '1' }
 
 permissions:
   contents: write
@@ -83,6 +83,6 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - run: |
-          s=${{ inputs.size || '22' }}; p=${{ inputs.part || '0' }}; stop=${{ inputs.stop_at || '18' }}
+          s=${{ inputs.size || '22' }}; p=${{ inputs.part || '0' }}; stop=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github.raw' "https://api.github.com/repos/$GITHUB_REPOSITORY/contents/.github/tt-stop?ref=$GITHUB_REF_NAME" | tr -dc 0-9); stop=${stop:-1}
           if [ "${{ needs.plan.outputs.more }}" = "true" ]; then p=$((p + 1)); elif [ "$s" -gt "$stop" ]; then s=$((s - 1)); p=0; else echo "reached size $stop, done"; exit 0; fi
-          gh workflow run tt.yml -R "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" -f size=$s -f part=$p -f stop_at=$stop
+          gh workflow run tt.yml -R "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" -f size=$s -f part=$p
