@@ -9,7 +9,8 @@
    because the artifact file store takes text and JSON but not raw gzip. */
 'use strict';
 const fs = require('fs'), path = require('path'), zlib = require('zlib'), crypto = require('crypto');
-const GAMES = ['RB', 'Y', 'GS', 'C', 'RS', 'E', 'FRLG', 'DP', 'PT', 'HGSS', 'BW', 'B2W2', 'XY', 'ORAS', 'SM', 'USUM', 'LGPE', 'SWSH', 'BDSP', 'PLA', 'SV', 'LZA'];
+const GAMES = ['RB', 'Y', 'GS', 'C', 'RS', 'E', 'FRLG', 'DP', 'PT', 'HGSS', 'BW', 'B2W2', 'XY', 'ORAS', 'SM', 'USUM', 'LGPE', 'SWSH', 'BDSP', 'PLA', 'SV', 'LZA',
+  'IOA', 'CT', 'TM', 'ID', 'MD'];   // DLC after LZA, bits 22-26 (chains still run in release order; a DLC follows its base game)
 const BIT = Object.fromEntries(GAMES.map((g, i) => [g, i]));
 const GEN12 = new Set(['RB', 'Y', 'GS', 'C']), GEN7UP = new Set(GAMES.slice(14));
 const OUT = path.resolve(process.argv[2]);
