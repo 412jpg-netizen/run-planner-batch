@@ -2,7 +2,7 @@ name: Sweep Through Time, largest first
 # Through Time = any of the 22 games in release order (generations may be skipped). Plans every chain of one size for all 96 rule sets,
 # then dispatches itself for the next part / next smaller size, down to the size in .github/tt-stop (edit it to stop early). Summaries are committed to tt/ on this branch; every
 # chain's full result (with each game's carried pool, PT_POOL) goes to a release tagged t1-<file>. A job already in tt/ is skipped.
-# At most 14 jobs at a time, leaving 6 of the 20 runners for the v2 openings sweep. Start: push a change to this file (starts at size 22), or Run workflow.
+# Carried pools use the roster shape (resumable). At most 14 jobs at a time, leaving 6 of the 20 runners for the v2 openings sweep. Start: push a change to this file (starts at size 22), or Run workflow.
 on:
   push:
     branches: [postswitch-sweep]

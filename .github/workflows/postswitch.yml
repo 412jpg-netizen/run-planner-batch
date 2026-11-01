@@ -1,4 +1,5 @@
 name: Sweep post-Switch chains, all versions
+# Carried pools use the roster shape (resumable).
 # Plans every post-Switch chain (each subset of LGPE, SWSH, BDSP, PLA, SV, LZA in release order) with every version choice
 # (Pikachu/Eevee, Sword/Shield, BD/SP, Scarlet/Violet): 323 chains per rule set, one rule set per GitHub machine.
 # Summary per rule set is committed to postswitch2/<flags>-d<delta>-ps.json (skipped if already there); every chain's full result goes to
