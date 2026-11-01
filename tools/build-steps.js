@@ -34,27 +34,33 @@ const kindOf = chain => chain.every(c => BIT[c] < 12) ? 'open' : 'tail';
 
 const inputs = process.argv.slice(3).flatMap(p => fs.statSync(p).isDirectory() ? fs.readdirSync(p).filter(f => f.endsWith('.json.gz')).map(f => path.join(p, f)) : [p]);
 const store = new Map();   // kind/ruleKey -> Map(stepId -> record)
-let chains = 0, dup = 0, conflicts = 0;
+let chains = 0, dup = 0, conflicts = 0, stored = 0;
 const conflictList = [];
 for (const f of inputs) {
   for (const r of JSON.parse(zlib.gunzipSync(fs.readFileSync(f)).toString())) {
     chains++;
-    const chain = r.chain.map(c => String(c).split('@')[0]), versions = r.versions || chain.map(() => 1);
-    const key = kindOf(chain) + '/' + ruleKey(r.rules, chain), id = stepId(chain, versions);
-    const g = Object.assign({}, r.games.at(-1)); delete g.pool;
-    const rec = { g, pool: r.roster, total: r.total, catches: r.catches, cleared: r.cleared, n: chain.length };
-    if (!store.has(key)) store.set(key, new Map());
-    const m = store.get(key), old = m.get(id);
-    if (old) {
-      dup++;
-      if (JSON.stringify(old.g) !== JSON.stringify(rec.g) || old.total !== rec.total) { conflicts++; if (conflictList.length < 20) conflictList.push(key + ' ' + id + ' ' + path.basename(f)); }
-      continue;
+    const full = r.chain.map(c => String(c).split('@')[0]), fullVer = r.versions || full.map(() => 1);
+    /* games that carry their own roster-shaped pool (g.pool with usedIn) give a step for every prefix; otherwise only the whole chain */
+    const perGame = r.games.every(g => Array.isArray(g.pool) && g.pool.every(p => Array.isArray(p.usedIn)));
+    for (let k = perGame ? 1 : full.length; k <= full.length; k++) {
+      const chain = full.slice(0, k), versions = fullVer.slice(0, k), last = r.games[k - 1];
+      const key = kindOf(chain) + '/' + ruleKey(r.rules, chain), id = stepId(chain, versions);
+      const g = Object.assign({}, last); delete g.pool;
+      const pool = k === full.length ? r.roster : last.pool, used = pool.filter(p => p.used);
+      const rec = { g, pool, total: used.length, catches: used.filter(p => p.kind !== 'starter').length, cleared: r.games.slice(0, k).filter(x => x.ok).length, n: k };
+      if (!store.has(key)) store.set(key, new Map());
+      const m = store.get(key), old = m.get(id);
+      if (old) {
+        dup++;
+        if (JSON.stringify(old.g) !== JSON.stringify(rec.g) || old.total !== rec.total) { conflicts++; if (conflictList.length < 20) conflictList.push(key + ' ' + id + ' ' + path.basename(f)); }
+        continue;
+      }
+      m.set(id, rec); stored++;
     }
-    m.set(id, rec);
   }
 }
 
-const manifest = { v: 2, engine: 'xp2261031', chain: 'lv2', built: new Date().toISOString(), games: GAMES, files: {} };
+const manifest = { v: 2, engine: 'xp2261101', chain: 'lv2', built: new Date().toISOString(), games: GAMES, files: {} };
 const write = (rel, text) => {
   const p = path.join(OUT, rel); fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, text);
   manifest.files[rel] = { bytes: Buffer.byteLength(text), sha1: crypto.createHash('sha1').update(text).digest('hex').slice(0, 16) };
@@ -72,5 +78,5 @@ for (const [key, m] of store) {
 }
 fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest));
 const total = Object.values(manifest.files).reduce((a, f) => a + f.bytes, 0);
-console.log(JSON.stringify({ inputs: inputs.length, chains, stored: chains - dup, duplicates: dup, conflicts, ruleKeys: store.size, files: Object.keys(manifest.files).length, mb: +(total / 1e6).toFixed(1) }));
+console.log(JSON.stringify({ inputs: inputs.length, chains, stored, duplicates: dup, conflicts, ruleKeys: store.size, files: Object.keys(manifest.files).length, mb: +(total / 1e6).toFixed(1) }));
 if (conflicts) { console.error('CONFLICTS (same step, different plan):\n' + conflictList.join('\n')); process.exit(2); }
