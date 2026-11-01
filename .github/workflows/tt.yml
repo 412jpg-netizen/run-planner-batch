@@ -2,8 +2,11 @@ name: Sweep Through Time, largest first
 # Through Time = any of the 22 games in release order (generations may be skipped). Plans every chain of one size for all 96 rule sets,
 # then dispatches itself for the next part / next smaller size, down to stop_at. Summaries are committed to tt/ on this branch; every
 # chain's full result (with each game's carried pool, PT_POOL) goes to a release tagged t1-<file>. A job already in tt/ is skipped.
-# At most 14 jobs at a time, leaving 6 of the 20 runners for the v2 openings sweep. Start: Run workflow with size 22.
+# At most 14 jobs at a time, leaving 6 of the 20 runners for the v2 openings sweep. Start: push a change to this file (starts at size 22), or Run workflow.
 on:
+  push:
+    branches: [postswitch-sweep]
+    paths: ['.github/workflows/tt.yml']
   workflow_dispatch:
     inputs:
       size: { description: 'Chain size to plan (22 = longest)', default: '22' }
@@ -25,7 +28,7 @@ jobs:
       - uses: actions/checkout@v4
       - id: p
         run: |
-          out=$(node tools/tt-plan.js ${{ inputs.size }} ${{ inputs.part }})
+          out=$(node tools/tt-plan.js ${{ inputs.size || '22' }} ${{ inputs.part || '0' }})
           echo "matrix=$(echo "$out" | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(JSON.stringify({include:d.include}))")" >> "$GITHUB_OUTPUT"
           echo "more=$(echo "$out" | node -e "console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).more)")" >> "$GITHUB_OUTPUT"
           echo "count=$(echo "$out" | node -e "console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).include.length)")" >> "$GITHUB_OUTPUT"
@@ -56,11 +59,11 @@ jobs:
           git config user.name "planner-batch"
           git config user.email "planner-batch@users.noreply.github.com"
           f="${{ matrix.file }}"; br="${GITHUB_REF_NAME}"
-          node tools/sweep-combos.js ${{ inputs.size }} ${{ matrix.shard }} ${{ matrix.shards }} out
+          node tools/sweep-combos.js ${{ inputs.size || '22' }} ${{ matrix.shard }} ${{ matrix.shards }} out
           mkdir -p tt && cp "out/sweep/$f" "tt/$f"
           tag="t1-${f%.json}"
           for i in 1 2 3 4 5; do
-            gh release create "$tag" "out/full/$f.gz" --target "$br" --title "$tag" --notes "Full results with carried pools, Through Time size ${{ inputs.size }}" && break
+            gh release create "$tag" "out/full/$f.gz" --target "$br" --title "$tag" --notes "Full results with carried pools, Through Time size ${{ inputs.size || '22' }}" && break
             gh release delete "$tag" --cleanup-tag -y || true
             sleep 10
           done
@@ -80,6 +83,6 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - run: |
-          s=${{ inputs.size }}; p=${{ inputs.part }}; stop=${{ inputs.stop_at }}
+          s=${{ inputs.size || '22' }}; p=${{ inputs.part || '0' }}; stop=${{ inputs.stop_at || '18' }}
           if [ "${{ needs.plan.outputs.more }}" = "true" ]; then p=$((p + 1)); elif [ "$s" -gt "$stop" ]; then s=$((s - 1)); p=0; else echo "reached size $stop, done"; exit 0; fi
           gh workflow run tt.yml -R "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" -f size=$s -f part=$p -f stop_at=$stop
