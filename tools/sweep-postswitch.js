@@ -15,7 +15,7 @@ const CE = require(path.join(ROOT, 'assets', 'planner', 'chain-engine.js'));
 const rj = p => JSON.parse(fs.readFileSync(path.join(DATA, p), 'utf8'));
 const DEX = rj('dex.json'), PL = rj('planner.json'), AVAIL = rj('avail.json').rows;
 const STARTERS = Object.fromEntries(PL.games.map(g => [g.code, g.starters.map(s => s.n)]));
-const R = Object.assign({ delta: 2, obey: true, vc: true, frlgSwitch: false, gifts: true, tms: false }, JSON.parse(process.env.PT_RULES || '{}'));
+const R = Object.assign({ delta: 2, obey: true, vc: true, frlgSwitch: false, gifts: true, tms: false }, JSON.parse(process.env.PT_RULES || '{}'), process.env.PT_POOL === '1' ? { keepPool: true } : {});   // PT_POOL=1: full results keep each game's carried pool
 const flags = ['obey', 'vc', 'frlgSwitch', 'gifts', 'tms'].map(k => R[k] ? 1 : 0).join('');
 const mine = chains;
 

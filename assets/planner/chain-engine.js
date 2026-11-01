@@ -162,6 +162,7 @@
         const pickS = step.starter && prep.r.starters.some(s => s.ok && s.starter === step.starter) ? step.starter : prep.r.best;   // step.starter: replay a chain found before
         const e = pickS ? prep.r.starters.find(s => s.starter === pickS) : null;
         const g = apply(pool, prep, e, R);
+        if (R.keepPool) g.pool = pool.map(p => ({ id: p.id, lv: p.lv, from: p.from, key: p.key, used: p.used }));   // batch only: carried pool after this game, so a stored step can seed live compute
         games.push(g);
         if (onProg) onProg({ phase: 'done', game: step.code, index: n + 1, total: chain.length, done: g });
       }
