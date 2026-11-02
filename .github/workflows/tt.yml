@@ -11,6 +11,7 @@ on:
     inputs:
       size: { description: 'Chain size to plan (22 = longest)', default: '22' }
       part: { description: 'Part of this size (250 jobs each)', default: '0' }
+      follow: { description: 'Dispatch the next part / size when done (0 = no, for a one-off catch-up run)', default: '1' }
       stop_at: { description: 'Unused (kept for runs already queued); the stop size is .github/tt-stop', default: '1' }
 
 permissions:
@@ -84,5 +85,7 @@ jobs:
     steps:
       - run: |
           s=${{ inputs.size || '22' }}; p=${{ inputs.part || '0' }}; stop=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github.raw' "https://api.github.com/repos/$GITHUB_REPOSITORY/contents/.github/tt-stop?ref=$GITHUB_REF_NAME" | tr -dc 0-9); stop=${stop:-1}
-          if [ "${{ needs.plan.outputs.more }}" = "true" ]; then p=$((p + 1)); elif [ "$s" -gt "$stop" ]; then s=$((s - 1)); p=0; else echo "reached size $stop, done"; exit 0; fi
+          if [ "${{ inputs.follow }}" = "0" ]; then echo "one-off run, not dispatching"; exit 0; fi
+          # done jobs drop out of the plan, so the next part of the same size is always part 0 again
+          if [ "${{ needs.plan.outputs.more }}" = "true" ]; then p=0; elif [ "$s" -gt "$stop" ]; then s=$((s - 1)); p=0; else echo "reached size $stop, done"; exit 0; fi
           gh workflow run tt.yml -R "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" -f size=$s -f part=$p
