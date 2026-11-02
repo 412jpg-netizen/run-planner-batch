@@ -18,5 +18,6 @@ for (const r of rules) {
     jobs.push({ rules: r, shard: k, shards, file: f });
   }
 }
-const include = jobs.slice(PART * 250, (PART + 1) * 250);
-console.log(JSON.stringify({ include, more: jobs.length > (PART + 1) * 250, total: jobs.length }));
+// done jobs are already left out above, so every part takes the first 250 still to do (PART is kept only for older callers)
+const include = jobs.slice(0, 250);
+console.log(JSON.stringify({ include, more: jobs.length > 250, total: jobs.length }));
