@@ -43,9 +43,13 @@ for (const [fam, F] of Object.entries(FAM)) {
       return [flags, { n: R.n, min: t[0], med: t[t.length >> 1], max: t[t.length - 1], cleared: R.cleared, best: R.best }]; }));
     roll[fam + (fam === 'tt' ? '-s' + size : '')] = sum(S.rs);
     for (const [len, rs] of Object.entries(S.byLen)) roll[fam + '-g' + len] = sum(rs);   // post-Switch and DLC: by number of games too
-    const txt = zlib.gzipSync(JSON.stringify({ v: 1, fam, size: +size, ruleSets: [...RS.keys()], rows: S.rows }), { level: 9 }).toString('base64');
-    fs.writeFileSync(path.join(OUT, 'rows', fam + '-s' + size + '.txt'), txt);
-    console.error(fam, size, S.rows.length, 'rows', (txt.length / 1048576).toFixed(1) + ' MB');
+    // a file in the store holds at most 20 MiB: big sizes are written as parts (.p0, .p1, ...) of ~2M rows each; the page merges them
+    const PART = 2e6, parts = Math.max(1, Math.ceil(S.rows.length / PART));
+    for (let p = 0; p < parts; p++) {
+      const txt = zlib.gzipSync(JSON.stringify({ v: 1, fam, size: +size, part: p, parts, ruleSets: [...RS.keys()], rows: S.rows.slice(p * PART, (p + 1) * PART) }), { level: 9 }).toString('base64');
+      fs.writeFileSync(path.join(OUT, 'rows', fam + '-s' + size + (parts > 1 ? '.p' + p : '') + '.txt'), txt);
+      console.error(fam, size, p + 1 + '/' + parts, Math.min(PART, S.rows.length - p * PART), 'rows', (txt.length / 1048576).toFixed(1) + ' MB');
+    }
   }
 }
 man.ruleSets = [...RS.keys()];
