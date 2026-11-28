@@ -1,0 +1,91 @@
+name: Sweep Through Time, largest first
+# Through Time = any of the 22 games in release order (generations may be skipped). Plans every chain of one size for all 96 rule sets,
+# then dispatches itself for the next part / next smaller size, down to the size in .github/tt-stop (edit it to stop early). Summaries are committed to tt/ on this branch; every
+# chain's full result (with each game's carried pool, PT_POOL) goes to a release tagged t1-<file>. A job already in tt/ is skipped.
+# Carried pools use the roster shape (resumable). At most 14 jobs at a time, leaving 6 of the 20 runners for the v2 openings sweep. Start: push a change to this file (starts at size 22), or Run workflow.
+on:
+  push:
+    branches: [postswitch-sweep]
+    paths: ['.github/workflows/tt.yml']
+  workflow_dispatch:
+    inputs:
+      size: { description: 'Chain size to plan (22 = longest)', default: '22' }
+      part: { description: 'Part of this size (250 jobs each)', default: '0' }
+      follow: { description: 'Dispatch the next part / size when done (0 = no, for a one-off catch-up run)', default: '1' }
+      stop_at: { description: 'Unused (kept for runs already queued); the stop size is .github/tt-stop', default: '1' }
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.p.outputs.matrix }}
+      more: ${{ steps.p.outputs.more }}
+      count: ${{ steps.p.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: p
+        run: |
+          out=$(node tools/tt-plan.js ${{ inputs.size || '22' }} ${{ inputs.part || '0' }})
+          echo "matrix=$(echo "$out" | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(JSON.stringify({include:d.include}))")" >> "$GITHUB_OUTPUT"
+          echo "more=$(echo "$out" | node -e "console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).more)")" >> "$GITHUB_OUTPUT"
+          echo "count=$(echo "$out" | node -e "console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).include.length)")" >> "$GITHUB_OUTPUT"
+
+  sweep:
+    needs: plan
+    if: needs.plan.outputs.count != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Plan one shard
+        env:
+          PT_WORKERS: 4
+          PT_CONC: 8
+          PT_RULES: ${{ matrix.rules }}
+          PT_FULL: '1'
+          PT_POOL: '1'
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "planner-batch"
+          git config user.email "planner-batch@users.noreply.github.com"
+          f="${{ matrix.file }}"; br="${GITHUB_REF_NAME}"
+          node tools/sweep-combos.js ${{ inputs.size || '22' }} ${{ matrix.shard }} ${{ matrix.shards }} out
+          mkdir -p tt && cp "out/sweep/$f" "tt/$f"
+          tag="t1-${f%.json}"
+          for i in 1 2 3 4 5; do
+            gh release create "$tag" "out/full/$f.gz" --target "$br" --title "$tag" --notes "Full results with carried pools, Through Time size ${{ inputs.size || '22' }}" && break
+            gh release delete "$tag" --cleanup-tag -y || true
+            sleep 10
+          done
+          git add "tt/$f"
+          git commit -q -m "Through Time $f" || exit 0
+          for i in $(seq 1 30); do
+            git pull -q --rebase origin "$br" && git push -q origin "HEAD:$br" && break
+            if [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then git rebase --abort; git reset -q --keep "origin/$br"; break; fi
+            sleep $((RANDOM % 15 + 3))
+          done
+
+  next:
+    needs: [plan, sweep]
+    if: always() && needs.plan.result == 'success'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - run: |
+          s=${{ inputs.size || '22' }}; p=${{ inputs.part || '0' }}; stop=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github.raw' "https://api.github.com/repos/$GITHUB_REPOSITORY/contents/.github/tt-stop?ref=$GITHUB_REF_NAME" | tr -dc 0-9); stop=${stop:-1}
+          if [ "${{ inputs.follow }}" = "0" ]; then echo "one-off run, not dispatching"; exit 0; fi
+          # done jobs drop out of the plan, so the next part of the same size is always part 0 again
+          if [ "${{ needs.plan.outputs.more }}" = "true" ]; then p=0; elif [ "$s" -gt "$stop" ]; then s=$((s - 1)); p=0; else echo "reached size $stop, done"; exit 0; fi
+          gh workflow run tt.yml -R "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" -f size=$s -f part=$p
